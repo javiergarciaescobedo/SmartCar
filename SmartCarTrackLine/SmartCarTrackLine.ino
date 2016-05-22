@@ -17,6 +17,16 @@ boolean turnRight = true;
 boolean lastTurnChangeRight = true;
 int speedRight, speedLeft;
 
+const int PARADO = 0;
+const int MARCHA_FRENTE = 1;
+const int GIRO_DERECHA = 2;
+const int GIRO_IZQUIERDA = 3;
+const int DERRAPE_DERECHA = 4;
+const int DERRAPE_IZQUIERDA = 5;
+int modoGiro = MARCHA_FRENTE;
+boolean ultimoEnLineaEsDerecha = true;
+boolean estaFueraLinea = false;
+
 void setup() {
   pinMode(pinLineTrackingRight, INPUT); 
   pinMode(pinLineTrackingLeft, INPUT);
@@ -36,32 +46,52 @@ void setup() {
 
 void loop() {
   int onLineRight = digitalRead(pinLineTrackingRight);  
-  int onLineLeft = digitalRead(pinLineTrackingLeft);    
+  int onLineLeft = digitalRead(pinLineTrackingLeft);  
+    
   if(onLineRight == 0 && onLineLeft == 1) { 
     // Fuera de línea por la derecha. Girar a izquierda
-    turnRight = false;
-    lastTurnChangeRight = false;
-  }
-  if(onLineRight == 1 && onLineLeft == 0) { 
-    // Fuera de línea por la izquierda. Girar a izquierda
-    turnRight = true;
-    lastTurnChangeRight = true;
-  }
-  if(onLineRight == 0 && onLineLeft == 0) { 
+    modoGiro = GIRO_IZQUIERDA;
+    ultimoEnLineaEsDerecha = false;
+    estaFueraLinea = false;
+  } else if(onLineRight == 1 && onLineLeft == 0) { 
+    // Fuera de línea por la izquierda. Girar a derecha
+    modoGiro = GIRO_DERECHA;
+    ultimoEnLineaEsDerecha = true;
+    estaFueraLinea = false;
+  } else if(onLineRight == 0 && onLineLeft == 0) { 
     // Fuera de línea por los dos lados
-    turnRight = !lastTurnChangeRight;
-  }
-  if(onLineRight == 1 && onLineLeft == 1) { 
+    if(ultimoEnLineaEsDerecha) {
+      modoGiro = GIRO_DERECHA;
+    } else {
+      modoGiro = GIRO_IZQUIERDA;
+    }
+    estaFueraLinea = true;
+  } else if(onLineRight == 1 && onLineLeft == 1) { 
     // En línea por los dos lados
-    turnRight = !lastTurnChangeRight;
+    if(estaFueraLinea) {
+      switch(modoGiro) {
+        case GIRO_DERECHA:
+          modoGiro = GIRO_IZQUIERDA;
+          break;
+        case GIRO_IZQUIERDA:
+          modoGiro = GIRO_DERECHA;
+          break;
+      }
+    } else {
+      modoGiro = GIRO_DERECHA;
+    }
+    estaFueraLinea = false;
   }
 
-  if(turnRight) {
-    speedRight = 0;
-    speedLeft = 255;
-  } else {
-    speedRight = 255;
-    speedLeft = 0;
+  switch(modoGiro) {
+    case GIRO_DERECHA:
+      speedRight = 0;
+      speedLeft = 150;
+      break;
+    case GIRO_IZQUIERDA:
+      speedRight = 150;
+      speedLeft = 0;
+      break;
   }
 
   analogWrite(enA, speedRight); 
