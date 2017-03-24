@@ -68,8 +68,6 @@ void setup() {
 
   servo1.attach(pinServo1);
 
-  // Esperar un momento para preparar el coche en su lugar
-  delay(5000);
 } 
 
 /* 
@@ -79,7 +77,6 @@ void setup() {
  */
 void loop() { 
   servo1.write(ANGULO_CENTRO);
-  
   Serial.println("Test sensor distancia: ");
   for(int i=0; i<10; i++) {
     Serial.print("   distancia: (");
@@ -117,36 +114,39 @@ void loop() {
     int onLineLeft = digitalRead(pinLineTrackingLeft);  
     Serial.println(onLineLeft);
     delay(500);
-  }
+  }   
   
   Serial.println("Motor izquierdo: ");
   Serial.println("  Adelante: ");
   digitalWrite(in1, HIGH); 
   digitalWrite(in2, LOW); 
   analogWrite(enA, 255); 
-  delay(200);
+  delay(1000);
   analogWrite(enA, 0); 
-  delay(500);
+  delay(1000);
   Serial.println("  Atrás: ");
   digitalWrite(in1, LOW); 
   digitalWrite(in2, HIGH); 
   analogWrite(enA, 255); 
-  delay(200);
+  delay(1000);
   analogWrite(enA, 0); 
-  delay(500);
+  delay(1000);
 
   Serial.println("Motor derecho: ");
   Serial.println("  Adelante: ");
   digitalWrite(in3, HIGH); 
   digitalWrite(in4, LOW); 
   analogWrite(enB, 255); 
-  delay(200);
+  delay(1000);
+  digitalWrite(in3, LOW); 
+  digitalWrite(in4, LOW); 
   analogWrite(enB, 0); 
-  delay(500);
+  delay(1000);
   Serial.println("  Atrás: ");
   digitalWrite(in3, LOW); 
-  digitalWrite(in4, HIGH); 
+  digitalWrite(in4, HIGH);  
   analogWrite(enB, 255); 
-  delay(200);
+  delay(1000);
   analogWrite(enB, 0); 
+  delay(1000);
 }
