@@ -1,31 +1,37 @@
 // Para poder programar servo-motores se debe incluir la librería Servo.h 
 #include <Servo.h>
 
-// MOTOR 1 (Derecho)
+#include "NewPing.h"
+
+// MOTOR 1 (Izquierdo)
 // Pines de conexión en la tarjeta Arduino. Los pines de conexión 
 //  unidos a enA y enB de la tarjeta L298N, deben ser PWM (~) 
-int enA = 5; // Pin enA de la tarjeta controladora L298N 
-int in1 = 8;  // Pin in1 "  "  "       "            " 
-int in2 = 9;  // Pin in2 "  "  "       "            " 
-// MOTOR 2 (Izquierdo)
-int in3 = 12; // Pin in3 de la tarjeta controladora L298N 
-int in4 = 13; // Pin in4 "  "  "       "            " 
-int enB = 11; // Pin enB "  "  "       "            " 
+int enA = 6; // Pin enA de la tarjeta controladora L298N 
+int in1 = 7;  // Pin in1 "  "  "       "            " 
+int in2 = 5;  // Pin in2 "  "  "       "            " 
+// MOTOR 2 (Derecho)
+int in3 = 4; // Pin in3 de la tarjeta controladora L298N 
+int in4 = 2; // Pin in4 "  "  "       "            " 
+int enB = 3; // Pin enB "  "  "       "            " 
 
 // Pin de la tarjeta Arduino donde se haya conectado el pin Echo del sensor ultrasonidos 
-int pinEcho = 6;
+int pinEcho = 10;
 // Pin de la tarjeta Arduino donde se haya conectado el pin Trig del sensor ultrasonidos 
-int pinTrig = 4;
+int pinTrig = 11;
 
 // Pin de la tarjeta Arduino donde se ha conectado el pin de señal del servo 
-int pinServo1 = 7;   
+int pinServo1 = 9;   
+
+// Pin de sensores seguidores de líneas
+int pinLineTrackingRight = 13;
+int pinLineTrackingLeft = 12;
 
 // El servo-motor se va a ir posicionando sucesivamente 
 //  para mirar al centro, derecha e izquierda, por lo que se van a  
 //  almacenar en 3 constantes los ángulos que debe tomar el servo-motor 
 //  para tomar las posiciones deseadas 
-const int ANGULO_CENTRO = 100; 
-const int ANGULO_IZQUIERDA = 150; 
+const int ANGULO_CENTRO = 90; 
+const int ANGULO_IZQUIERDA = 130; 
 const int ANGULO_DERECHA = 50; 
 
 // Almacena el ángulo en el que se encuentre el servo-motor en cada momento 
@@ -39,11 +45,11 @@ boolean haciaDerecha = true;
 
 // Valor de compensación para frenar la velocidad de los motores en caso de que
 //  la velocidad sera demasiado alta. 1 = máxima velocidad
-const float FRENO_MOTOR = 0.6;
+const float POTENCIA_MOTOR = 1;
 
 // Valores para compensar la velocidad de los motores en caso de que un motor
 //  tenga más velocidad que otro en todo momento
-const float COMPENSA_MOTOR_IZQUIERDO = 0.8;
+const float COMPENSA_MOTOR_IZQUIERDO = 0.9;
 const float COMPENSA_MOTOR_DERECHO = 1;
 
 const int DIRECCION_PARAR = 0;
@@ -55,6 +61,10 @@ const int DIRECCION_ROTACION_IZQUIERDA = 4;
 // Variable que hace referencia al servo-motor del sensor de obstáculos
 Servo servo1; 
 
+int max_distance = 200; // Distancia máxima a detectar en cm
+const int DISTANCIA_OBSTACULO = 30;
+ 
+NewPing sonar(pinTrig, pinEcho, max_distance);
 /* 
  *  
  *  SETUP
@@ -91,32 +101,19 @@ void setup() {
  */
 void loop() { 
   int distancia = obtenerDistanciaObstaculo();
-  if(distancia < 40 && distancia != 0) {
+  Serial.print("distancia = ");
+  Serial.println(distancia);
+  if(distancia < DISTANCIA_OBSTACULO && distancia != 0) {
     rotarMayorDistancia();
   } else {
-    moverCoche(DIRECCION_ADELANTE, 255 * FRENO_MOTOR);
-    moverOjos();
+    moverCoche(DIRECCION_ADELANTE, 255 * POTENCIA_MOTOR);
+    //moverOjos();
   }
+  delay(50);
 } 
 
 int obtenerDistanciaObstaculo() {
-  // Envío del pulso ultrasónico por el pin TRIG. Requiere establecer previamente 
-  //  la señal LOW y luego enviar el pulso con el valor HIGH. Se establece una 
-  //  pausa entre cada orden para dar tiempo a su ejecución 
-  digitalWrite(pinTrig, LOW);  
-  delayMicroseconds(10); 
-  digitalWrite(pinTrig, HIGH);  
-  delayMicroseconds(10); 
-  // Obtener el tiempo que se tarda en recibir la señal HIGH que fue enviada 
-  //  por el pin Trig, y que será recibido por el pin Echo.  
-  // Se esperará a recibir la señal durante un tiempo máximo marcado por el  
-  //  tercer parámetro (en microsegundos). 
-  // En caso de no recibir la señal en el tiempo máximo establecido, se obtiene 0 
-  long tiempoRecepcionPulso = pulseIn(pinEcho, HIGH, 10000); 
-  // Una vez recibida la señal, se calculará la distancia en función de la velocidad 
-  //  del sonido 340 m/s 
-  int distancia = (int)(0.034 * tiempoRecepcionPulso / 2); 
-  return distancia;
+  return sonar.ping_median(3) / 100;
 }
 
 void moverOjos() {
@@ -164,36 +161,36 @@ void moverCoche(int direccion, int velocidad) {
       analogWrite(enB, 0); 
       break;
     case DIRECCION_ADELANTE:
-      digitalWrite(in1, LOW); 
-      digitalWrite(in2, HIGH); 
-      analogWrite(enA, velocidad * COMPENSA_MOTOR_DERECHO); 
+      digitalWrite(in1, HIGH); 
+      digitalWrite(in2, LOW); 
+      analogWrite(enA, velocidad * COMPENSA_MOTOR_IZQUIERDO); 
       digitalWrite(in3, HIGH); 
       digitalWrite(in4, LOW); 
-      analogWrite(enB, velocidad * COMPENSA_MOTOR_IZQUIERDO); 
+      analogWrite(enB, velocidad * COMPENSA_MOTOR_DERECHO); 
       break;
     case DIRECCION_ATRAS:
-      digitalWrite(in1, HIGH); 
-      digitalWrite(in2, LOW); 
-      analogWrite(enA, velocidad * COMPENSA_MOTOR_DERECHO); 
-      digitalWrite(in3, LOW); 
-      digitalWrite(in4, HIGH); 
-      analogWrite(enB, velocidad * COMPENSA_MOTOR_IZQUIERDO); 
-      break;
-  case DIRECCION_ROTACION_DERECHA: // derecha atrás, izquierda adelante
-      digitalWrite(in1, HIGH); 
-      digitalWrite(in2, LOW); 
-      analogWrite(enA, velocidad * COMPENSA_MOTOR_DERECHO); 
-      digitalWrite(in3, HIGH); 
-      digitalWrite(in4, LOW); 
-      analogWrite(enB, velocidad * COMPENSA_MOTOR_IZQUIERDO); 
-      break;  
-  case DIRECCION_ROTACION_IZQUIERDA:  // izquierda atrás, derecha adelante
       digitalWrite(in1, LOW); 
       digitalWrite(in2, HIGH); 
-      analogWrite(enA, velocidad * COMPENSA_MOTOR_DERECHO); 
+      analogWrite(enA, velocidad * COMPENSA_MOTOR_IZQUIERDO); 
       digitalWrite(in3, LOW); 
       digitalWrite(in4, HIGH); 
-      analogWrite(enB, velocidad * COMPENSA_MOTOR_IZQUIERDO); 
+      analogWrite(enB, velocidad * COMPENSA_MOTOR_DERECHO); 
+      break;
+  case DIRECCION_ROTACION_IZQUIERDA: // izquierda atrás, derecha adelante
+      digitalWrite(in1, LOW); 
+      digitalWrite(in2, HIGH); 
+      analogWrite(enA, velocidad * COMPENSA_MOTOR_IZQUIERDO); 
+      digitalWrite(in3, HIGH); 
+      digitalWrite(in4, LOW); 
+      analogWrite(enB, velocidad * COMPENSA_MOTOR_DERECHO); 
+      break;  
+  case DIRECCION_ROTACION_DERECHA:  // derecha atrás, izquierda adelante
+      digitalWrite(in1, HIGH); 
+      digitalWrite(in2, LOW); 
+      analogWrite(enA, velocidad * COMPENSA_MOTOR_IZQUIERDO); 
+      digitalWrite(in3, LOW); 
+      digitalWrite(in4, HIGH); 
+      analogWrite(enB, velocidad * COMPENSA_MOTOR_DERECHO); 
       break;  
   }
 }
@@ -203,29 +200,46 @@ void rotarMayorDistancia() {
 
   // Parar el coche
   moverCoche(DIRECCION_PARAR, 0);
+  delay(500);
+  // Retrodecer un poco
+  moverCoche(DIRECCION_ATRAS, 255 * POTENCIA_MOTOR);
+  delay(300);
+  // Parar el coche
+  moverCoche(DIRECCION_PARAR, 0);
+  delay(500);
 
   // Mirar a la derecha y obtener distancia
   anguloServo = ANGULO_DERECHA; 
   servo1.write(anguloServo); 
-  delay(500); 
+  delay(1000); 
   distanciaDerecha = obtenerDistanciaObstaculo();
+  delay(1000); 
+  Serial.print("Distancia derecha: ");
+  Serial.println(distanciaDerecha);
 
   // Mirar a la izquierda y obtener distancia
   anguloServo = ANGULO_IZQUIERDA; 
   servo1.write(anguloServo); 
-  delay(500); 
+  delay(1000); 
   distanciaIzquierda = obtenerDistanciaObstaculo();
+  delay(1000); 
+  Serial.print("Distancia izquierda: ");
+  Serial.println(distanciaIzquierda);
+
+  anguloServo = ANGULO_CENTRO; 
+  servo1.write(anguloServo); 
+  delay(1000); 
 
   // Mover un poco hacia atrás antes de girar
-  moverCoche(DIRECCION_ATRAS, 255 * FRENO_MOTOR);
-  delay(300);
+//  moverCoche(DIRECCION_ATRAS, 255 * POTENCIA_MOTOR);
+//  delay(300);
   // Rotar el coche hacia el lado con el obstáculo más lejano
   if(distanciaDerecha == 0 || distanciaDerecha > distanciaIzquierda) {
-    moverCoche(DIRECCION_ROTACION_DERECHA, 255 * FRENO_MOTOR);
-    delay(500);
+    moverCoche(DIRECCION_ROTACION_DERECHA, 255 * POTENCIA_MOTOR);
+    delay(200);
   } else {
-    moverCoche(DIRECCION_ROTACION_IZQUIERDA, 255 * FRENO_MOTOR);
-    delay(500);
+    moverCoche(DIRECCION_ROTACION_IZQUIERDA, 255 * POTENCIA_MOTOR);
+    delay(200);
   }
 
   // Dejar el coche moviendo hacia adelante
