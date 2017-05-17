@@ -31,8 +31,8 @@ int pinLineTrackingLeft = 12;
 //  almacenar en 3 constantes los ángulos que debe tomar el servo-motor 
 //  para tomar las posiciones deseadas 
 const int ANGULO_CENTRO = 90; 
-const int ANGULO_IZQUIERDA = 130; 
-const int ANGULO_DERECHA = 50; 
+const int ANGULO_IZQUIERDA = 150; //130
+const int ANGULO_DERECHA = 30; //50
 
 // Almacena el ángulo en el que se encuentre el servo-motor en cada momento 
 int anguloServo = ANGULO_CENTRO;
@@ -63,6 +63,9 @@ Servo servo1;
 
 int max_distance = 200; // Distancia máxima a detectar en cm
 const int DISTANCIA_OBSTACULO = 30;
+
+const int TIEMPO_RETROCESO = 1000;
+const int TIEMPO_GIRO = 300;
  
 NewPing sonar(pinTrig, pinEcho, max_distance);
 /* 
@@ -203,7 +206,7 @@ void rotarMayorDistancia() {
   delay(500);
   // Retrodecer un poco
   moverCoche(DIRECCION_ATRAS, 255 * POTENCIA_MOTOR);
-  delay(300);
+  delay(TIEMPO_RETROCESO);
   // Parar el coche
   moverCoche(DIRECCION_PARAR, 0);
   delay(500);
@@ -236,10 +239,10 @@ void rotarMayorDistancia() {
   // Rotar el coche hacia el lado con el obstáculo más lejano
   if(distanciaDerecha == 0 || distanciaDerecha > distanciaIzquierda) {
     moverCoche(DIRECCION_ROTACION_DERECHA, 255 * POTENCIA_MOTOR);
-    delay(200);
+    delay(TIEMPO_GIRO);
   } else {
     moverCoche(DIRECCION_ROTACION_IZQUIERDA, 255 * POTENCIA_MOTOR);
-    delay(200);
+    delay(TIEMPO_GIRO);
   }
 
   // Dejar el coche moviendo hacia adelante
